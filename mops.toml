@@ -1,14 +1,19 @@
 [package]
-name = ""
+name = "tid"
 version = "0.0.1"
-description = ""
-repository = "https://github.com/edjcase/"
-keywords = [ ]
+description = "A motoko library for working with Time Identifiers (TIDs)"
+repository = "https://github.com/edjcase/motoko_tid"
+keywords = ["tid", "time", "identifier", "timestamp", "ipld", "atproto"]
 license = "MIT"
 
 [dependencies]
-base = "0.14.9"
+base = "0.14.14"
 new-base = "0.4.0"
+base-x-encoder = "1.2.0"
+xtended-numbers = "0.4.0"
 
 [dev-dependencies]
 test = "2.1.1"
+
+[toolchain]
+moc = "0.14.14"
