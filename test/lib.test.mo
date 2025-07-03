@@ -1,6 +1,7 @@
 import TID "../src";
 import Debug "mo:base/Debug";
 import Text "mo:new-base/Text";
+import Nat "mo:new-base/Nat";
 import { test } "mo:test";
 
 func testTid(
@@ -268,7 +269,7 @@ test(
 test(
   "TID Generator - Default Generator Creation",
   func() {
-    let generator = TID.buildDefaultGenerator();
+    let generator = TID.Generator();
     let tid = generator.next();
 
     // First TID should have clockId = 0
@@ -287,32 +288,15 @@ test(
 );
 
 test(
-  "TID Generator - Custom Initial Clock ID",
-  func() {
-    let generator = TID.buildGenerator(42);
-    let tid = generator.next();
-
-    // First TID should have clockId = 42
-    if (tid.clockId != 42) {
-      Debug.trap("Expected first TID from custom generator to have clockId = 42, got: " # debug_show (tid.clockId));
-    };
-  },
-);
-
-test(
   "TID Generator - Clock ID Wrapping",
   func() {
     // Test wrapping behavior by starting near max value
-    let generator = TID.buildGenerator(1022); // MAX_CLOCK_ID is 1023
-
-    let tid1 = generator.next(); // Should be 1022
-    if (tid1.clockId != 1022) {
-      Debug.trap("Expected clockId = 1022, got: " # debug_show (tid1.clockId));
-    };
-
-    let tid2 = generator.next(); // Should be  1023
-    if (tid2.clockId != 1023) {
-      Debug.trap("Expected clockId to wrap to 1023, got: " # debug_show (tid2.clockId));
+    let generator = TID.Generator();
+    for (i in Nat.range(0, 1024)) {
+      // Generate TIDs until we reach 1022
+      if (i != generator.next().clockId) {
+        Debug.trap("Expected clockId to be " # debug_show (i) # ", got: " # debug_show (generator.next().clockId));
+      };
     };
 
     let tid3 = generator.next(); // Should wrap to 0
@@ -325,7 +309,7 @@ test(
 test(
   "TID Generator - Sequence Generation",
   func() {
-    let generator = TID.buildGenerator(0);
+    let generator = TID.Generator();
 
     // Generate a sequence of TIDs
     let tids = [
@@ -357,7 +341,7 @@ test(
 test(
   "TID Generator - Generated TIDs Are Valid",
   func() {
-    let generator = TID.buildDefaultGenerator();
+    let generator = TID.Generator();
 
     // Generate several TIDs and verify they can be serialized/deserialized
     for (i in [1, 2, 3, 4, 5].vals()) {
@@ -386,11 +370,11 @@ test(
 test(
   "TID Generator - Comparison and Sorting",
   func() {
-    let generator = TID.buildGenerator(100);
+    let generator = TID.Generator();
 
-    let tid1 = generator.next(); // clockId = 101
-    let tid2 = generator.next(); // clockId = 102
-    let tid3 = generator.next(); // clockId = 103
+    let tid1 = generator.next(); // clockId = 0
+    let tid2 = generator.next(); // clockId = 1
+    let tid3 = generator.next(); // clockId = 2
 
     // Since they have same timestamp, ordering should be by clockId
     if (TID.compare(tid1, tid2) != #less) {
@@ -410,78 +394,29 @@ test(
 test(
   "TID Generator - Multiple Generators Independence",
   func() {
-    let gen1 = TID.buildGenerator(10);
-    let gen2 = TID.buildGenerator(20);
+    let gen1 = TID.Generator();
+    let gen2 = TID.Generator();
 
-    let tid1a = gen1.next(); // clockId = 10
-    let tid2a = gen2.next(); // clockId = 20
-    let tid1b = gen1.next(); // clockId = 11
-    let tid2b = gen2.next(); // clockId = 21
+    let tid1a = gen1.next(); // clockId = 0
+    let tid2a = gen2.next(); // clockId = 0
+    let tid1b = gen1.next(); // clockId = 1
+    let tid2b = gen2.next(); // clockId = 1
 
     // Verify independence - each generator maintains its own clock state
-    if (tid1a.clockId != 10) {
-      Debug.trap("Expected gen1 first TID to have clockId = 10, got: " # debug_show (tid1a.clockId));
+    if (tid1a.clockId != 0) {
+      Debug.trap("Expected gen1 first TID to have clockId = 0, got: " # debug_show (tid1a.clockId));
     };
 
-    if (tid2a.clockId != 20) {
-      Debug.trap("Expected gen2 first TID to have clockId = 20, got: " # debug_show (tid2a.clockId));
+    if (tid2a.clockId != 0) {
+      Debug.trap("Expected gen2 first TID to have clockId = 0, got: " # debug_show (tid2a.clockId));
     };
 
-    if (tid1b.clockId != 11) {
-      Debug.trap("Expected gen1 second TID to have clockId = 11, got: " # debug_show (tid1b.clockId));
+    if (tid1b.clockId != 1) {
+      Debug.trap("Expected gen1 second TID to have clockId = 1, got: " # debug_show (tid1b.clockId));
     };
 
-    if (tid2b.clockId != 21) {
-      Debug.trap("Expected gen2 second TID to have clockId = 21, got: " # debug_show (tid2b.clockId));
-    };
-  },
-);
-
-test(
-  "TID Generator - Edge Case: Max Initial Clock ID",
-  func() {
-    // Start with maximum clock ID
-    let generator = TID.buildGenerator(1024);
-
-    let tid1 = generator.next(); // Should wrap to 0
-    if (tid1.clockId != 0) {
-      Debug.trap("Expected clockId to wrap to 0 when starting at max, got: " # debug_show (tid1.clockId));
-    };
-
-    let tid2 = generator.next(); // Should be 1
-    if (tid2.clockId != 1) {
-      Debug.trap("Expected clockId = 1 after wrapping, got: " # debug_show (tid2.clockId));
-    };
-  },
-);
-
-test(
-  "TID Generator - Direct Constructor Usage",
-  func() {
-    // Test using the Generator constructor directly with known values
-    let fixedTime = 1640995200000000; // Fixed timestamp in nanoseconds
-    let generator = TID.Generator(fixedTime, 6);
-
-    let tid1 = generator.next();
-    let tid2 = generator.next();
-
-    // Both should have the same timestamp (converted to microseconds)
-    let expectedTimestamp = 1640995200000; // nanoseconds / 1000 = microseconds
-    if (tid1.timestamp != expectedTimestamp) {
-      Debug.trap("Expected timestamp " # debug_show (expectedTimestamp) # ", got: " # debug_show (tid1.timestamp));
-    };
-
-    if (tid2.timestamp != expectedTimestamp) {
-      Debug.trap("Expected same timestamp for both TIDs from same generator");
-    };
-
-    // Clock IDs should be 6 and 7 (incremented from initial 5)
-    if (tid1.clockId != 6) {
-      Debug.trap("Expected first TID clockId = 6, got: " # debug_show (tid1.clockId));
-    };
-
-    if (tid2.clockId != 7) {
-      Debug.trap("Expected second TID clockId = 7, got: " # debug_show (tid2.clockId));
+    if (tid2b.clockId != 1) {
+      Debug.trap("Expected gen2 second TID to have clockId = 1, got: " # debug_show (tid2b.clockId));
     };
   },
 );

@@ -177,54 +177,31 @@ module {
         tid1.timestamp == tid2.timestamp and tid1.clockId == tid2.clockId;
     };
 
-    /// Generates a new TID with the current timestamp and start clock ID of 0.
-    ////// The clock ID is incremented with each call to `next()`, wrapping around
-    /// to 0 when it exceeds the maximum value (1023).
-    ///
-    /// ```motoko
-    /// let generator = TID.buildDefaultGenerator();
-    /// let tid = generator.next();
-    /// // tid will have current timestamp and clockId = 0
-    /// ```
-    public func buildDefaultGenerator() : Generator {
-        let now = Time.now();
-        Generator(now, 0);
-    };
-
-    /// Generates a new TID with the current timestamp and a specified initial clock ID.
-    /// The clock ID is incremented with each call to `next()`, wrapping around
-    /// to 0 when it exceeds the maximum value (1023).
-    /// ///
-    /// ```motoko
-    /// let generator = TID.buildGenerator(42);
-    /// let tid = generator.next();
-    /// // tid will have current timestamp and clockId = 42
-    /// ```
-    public func buildGenerator(initClockId : Nat) : Generator {
-        let now = Time.now();
-        Generator(now, initClockId);
-    };
-
-    /// A generator for creating TIDs based on the current time and an initial clock ID.
+    /// A generator for creating TIDs based on the current time and clock Id of 0.
     /// /// The clock ID is incremented with each call to `next()`, wrapping around
     /// /// to 0 when it exceeds the maximum value (1023).
     /// /// If the initial clock ID exceeds the maximum (1023), it will be wrapped around to fit within bounds.
     /// /// ```motoko
     /// let now = Time.now();
-    /// let generator = TID.Generator(now, 0);
+    /// let generator = TID.Generator();
     /// let tid = generator.next();
     /// // tid will have current timestamp and clockId = 0
     /// ```
-    public class Generator(
-        now : Time.Time,
-        initClockId : Nat,
-    ) {
-        let microSeconds = Nat.fromInt(now / 1000); // Convert from nanoseconds to microseconds
-        var clockId : Nat = initClockId % (MAX_CLOCK_ID + 1); // Ensure clockId is within bounds
+    public class Generator() {
+        func nowInMicroseconds() : Nat = Nat.fromInt(Time.now()) / 1000;
+
+        var lastTime = nowInMicroseconds(); // Convert from nanoseconds to microseconds
+        var clockId : Nat = 0;
 
         public func next() : TID {
+            let currentTime = nowInMicroseconds();
+            if (currentTime != lastTime) {
+                // If the time has changed, reset clockId to 0
+                clockId := 0;
+                lastTime := currentTime;
+            };
             let nextTid = {
-                timestamp = microSeconds;
+                timestamp = currentTime;
                 clockId = clockId;
             };
 
@@ -234,6 +211,6 @@ module {
             };
             nextTid;
         };
-    }
+    };
 
 };
