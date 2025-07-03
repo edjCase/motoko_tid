@@ -1,6 +1,6 @@
 [package]
 name = "tid"
-version = "0.0.1"
+version = "0.0.3"
 description = "A motoko library for working with Time Identifiers (TIDs)"
 repository = "https://github.com/edjcase/motoko_tid"
 keywords = ["tid", "time", "identifier", "timestamp", "ipld", "atproto"]

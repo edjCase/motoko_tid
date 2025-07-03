@@ -1,10 +1,10 @@
 import Result "mo:new-base/Result";
-import Time "mo:new-base/Time";
 import Nat64 "mo:new-base/Nat64";
 import Nat8 "mo:new-base/Nat8";
 import Text "mo:new-base/Text";
 import Runtime "mo:new-base/Runtime";
 import Nat "mo:new-base/Nat";
+import Time "mo:new-base/Time";
 import BaseX "mo:base-x-encoder";
 import NatX "mo:xtended-numbers/NatX";
 import Buffer "mo:base/Buffer";
@@ -86,21 +86,6 @@ module {
         };
 
         fromNat64(nat64Value);
-    };
-
-    /// Creates a TID from the current time with a random clock identifier.
-    ///
-    /// ```motoko
-    /// let clockId = Nat32.toNat(Nat32.random() % 1024); // Random clock ID in range 0-1023
-    /// let tid = TID.now(clockId);
-    /// // Returns a TID with current timestamp and random clock ID
-    /// ```
-    public func now(clockId : Nat) : TID {
-        let timeNanos = Nat.fromInt(Time.now());
-        {
-            timestamp = timeNanos / 1000; // Convert nanoseconds to microseconds
-            clockId = clockId;
-        };
     };
 
     /// Converts a TID to its 64-bit integer representation.
@@ -190,5 +175,64 @@ module {
     public func equal(tid1 : TID, tid2 : TID) : Bool {
         tid1.timestamp == tid2.timestamp and tid1.clockId == tid2.clockId;
     };
+
+    /// Generates a new TID with the current timestamp and start clock ID of 0.
+    ////// The clock ID is incremented with each call to `next()`, wrapping around
+    /// to 0 when it exceeds the maximum value (1023).
+    ///
+    /// ```motoko
+    /// let generator = TID.buildDefaultGenerator();
+    /// let tid = generator.next();
+    /// // tid will have current timestamp and clockId = 0
+    /// ```
+    public func buildDefaultGenerator() : Generator {
+        let now = Time.now();
+        Generator(now, 0);
+    };
+
+    /// Generates a new TID with the current timestamp and a specified initial clock ID.
+    /// The clock ID is incremented with each call to `next()`, wrapping around
+    /// to 0 when it exceeds the maximum value (1023).
+    /// ///
+    /// ```motoko
+    /// let generator = TID.buildGenerator(42);
+    /// let tid = generator.next();
+    /// // tid will have current timestamp and clockId = 42
+    /// ```
+    public func buildGenerator(initClockId : Nat) : Generator {
+        let now = Time.now();
+        Generator(now, initClockId);
+    };
+
+    /// A generator for creating TIDs based on the current time and an initial clock ID.
+    /// /// The clock ID is incremented with each call to `next()`, wrapping around
+    /// /// to 0 when it exceeds the maximum value (1023).
+    /// /// If the initial clock ID exceeds the maximum (1023), it will be wrapped around to fit within bounds.
+    /// /// ```motoko
+    /// let now = Time.now();
+    /// let generator = TID.Generator(now, 0);
+    /// let tid = generator.next();
+    /// // tid will have current timestamp and clockId = 0
+    /// ```
+    public class Generator(
+        now : Time.Time,
+        initClockId : Nat,
+    ) {
+        let microSeconds = Nat.fromInt(now / 1000); // Convert from nanoseconds to microseconds
+        var clockId : Nat = initClockId % (MAX_CLOCK_ID + 1); // Ensure clockId is within bounds
+
+        public func next() : TID {
+            let nextTid = {
+                timestamp = microSeconds;
+                clockId = clockId;
+            };
+
+            clockId += 1; // Increment clock ID
+            if (clockId > MAX_CLOCK_ID) {
+                clockId := 0; // Wrap around if exceeds max
+            };
+            nextTid;
+        };
+    }
 
 };
