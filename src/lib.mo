@@ -8,6 +8,7 @@ import Time "mo:new-base/Time";
 import BaseX "mo:base-x-encoder";
 import NatX "mo:xtended-numbers/NatX";
 import Buffer "mo:base/Buffer";
+import Order "mo:new-base/Order";
 
 module {
 
@@ -152,16 +153,16 @@ module {
     /// let comparison = TID.compare(tid1, tid2);
     /// // Returns: negative value (tid1 < tid2)
     /// ```
-    public func compare(tid1 : TID, tid2 : TID) : Int8 {
+    public func compare(tid1 : TID, tid2 : TID) : Order.Order {
         // First compare by timestamp
-        if (tid1.timestamp < tid2.timestamp) return -1;
-        if (tid1.timestamp > tid2.timestamp) return 1;
+        if (tid1.timestamp < tid2.timestamp) return #less;
+        if (tid1.timestamp > tid2.timestamp) return #greater;
 
         // If timestamps equal, compare by clock ID
-        if (tid1.clockId < tid2.clockId) return -1;
-        if (tid1.clockId > tid2.clockId) return 1;
+        if (tid1.clockId < tid2.clockId) return #less;
+        if (tid1.clockId > tid2.clockId) return #greater;
 
-        return 0; // Equal
+        return #equal; // Equal
     };
 
     /// Checks if two TIDs are equal.

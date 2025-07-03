@@ -110,19 +110,19 @@ test(
     let tid3 = { timestamp = 2000; clockId = 3 }; // Same timestamp, different clock ID
 
     // Test numeric comparison
-    if (TID.compare(tid1, tid2) >= 0) {
+    if (TID.compare(tid1, tid2) != #less) {
       Debug.trap("Expected tid1 < tid2");
     };
 
-    if (TID.compare(tid2, tid1) <= 0) {
+    if (TID.compare(tid2, tid1) != #greater) {
       Debug.trap("Expected tid2 > tid1");
     };
 
-    if (TID.compare(tid1, tid1) != 0) {
+    if (TID.compare(tid1, tid1) != #equal) {
       Debug.trap("Expected tid1 == tid1");
     };
 
-    if (TID.compare(tid2, tid3) >= 0) {
+    if (TID.compare(tid2, tid3) != #less) {
       Debug.trap("Expected tid2 < tid3 (same timestamp, different clock)");
     };
   },
@@ -393,15 +393,15 @@ test(
     let tid3 = generator.next(); // clockId = 103
 
     // Since they have same timestamp, ordering should be by clockId
-    if (TID.compare(tid1, tid2) >= 0) {
+    if (TID.compare(tid1, tid2) != #less) {
       Debug.trap("Expected tid1 < tid2 (same timestamp, sequential clock IDs)");
     };
 
-    if (TID.compare(tid2, tid3) >= 0) {
+    if (TID.compare(tid2, tid3) != #less) {
       Debug.trap("Expected tid2 < tid3 (same timestamp, sequential clock IDs)");
     };
 
-    if (TID.compare(tid1, tid3) >= 0) {
+    if (TID.compare(tid1, tid3) != #less) {
       Debug.trap("Expected tid1 < tid3 (same timestamp, sequential clock IDs)");
     };
   },
